@@ -82,6 +82,7 @@ library
   build-depends:
       base-compat         >= 0.10.1   && < 0.11
     , base64-bytestring   >= 1.0.0.1  && < 1.1
+    , deepseq             >= 1.4.3.0  && < 1.5
     , exceptions          >= 0.10.0   && < 0.11
     , http-api-data       >= 0.3.8.1  && < 0.4
     , http-media          >= 0.7.1.2  && < 0.8
