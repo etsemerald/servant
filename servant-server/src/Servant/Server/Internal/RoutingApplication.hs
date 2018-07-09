@@ -10,7 +10,6 @@
 {-# LANGUAGE UndecidableInstances       #-}
 module Servant.Server.Internal.RoutingApplication where
 
-import           Control.DeepSeq                    (force)
 import           Control.Monad
                  (ap, liftM)
 import           Control.Monad.Base
@@ -94,16 +93,19 @@ instance MonadTransControl RouteResultT where
 instance MonadThrow m => MonadThrow (RouteResultT m) where
     throwM = lift . throwM
 
-toApplication :: Bool -> RoutingApplication -> Application
+-- determines if we should fully evaluate response
+data EvaluateResponse = EvaluateResponse | LazyResponse
+    deriving (Eq, Show)
+
+toApplication :: EvaluateResponse -> RoutingApplication -> Application
 toApplication fullyEvaluate ra request respond =
-  ra request (maybeEval routingRespond)
+  ra request (fmap maybeEval . routingRespond)
   where
-    maybeEval :: (RouteResult Response -> IO ResponseReceived)
-              -> RouteResult Response -> IO ResponseReceived
+    maybeEval :: ResponseReceived -> ResponseReceived
     maybeEval resp =
-      if fullyEvaluate
-        then force resp
-        else resp
+      case fullyEvaluate of
+          EvaluateResponse -> resp `seq` resp
+          LazyResponse -> resp
     routingRespond :: RouteResult Response -> IO ResponseReceived
     routingRespond (Fail err)      = respond $ responseServantErr err
     routingRespond (FailFatal err) = respond $ responseServantErr err
